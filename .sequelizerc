@@ -1,0 +1,9 @@
+const path = require('path');
+
+module.exports = {
+  'config': path.resolve('api/sequelize/config/config.js'),
+  'migrations-path': path.resolve('api/sequelize/migrations'),
+  'seeders-path': path.resolve('api/sequelize/seeders'),
+  // No usaremos generación automática de models del CLI
+  // 'models-path': path.resolve('api/src/infra/db/models'),
+};
