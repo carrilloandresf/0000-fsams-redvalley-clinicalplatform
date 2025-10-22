@@ -3,6 +3,7 @@ import { router } from './app/routes';
 import { sequelize } from './infra/db/sequelize';
 import { env } from './config/env';
 import { initAssociations } from './infra/db/models/associations';
+import cors from 'cors';
 
 async function bootstrap() {
   try {
@@ -16,6 +17,9 @@ async function bootstrap() {
   initAssociations();
 
   const app = express();
+
+  app.use(cors({ origin: 'http://localhost:5173' }));
+
   app.use(express.json());
   app.use(router);
 
