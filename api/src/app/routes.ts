@@ -26,6 +26,34 @@ router.get('/statuses', async (_req, res) => {
   }
 });
 
+// GET /statuses/tree -> árbol padre-hijo ordenado
+router.get('/statuses/tree', async (_req, res) => {
+  try {
+    const all = await StatusModel.findAll({
+      order: [['order', 'ASC'], ['name', 'ASC']],
+      raw: true,
+    });
+
+    const byId = new Map(all.map(s => [s.id, { ...s, children: [] as any[] }]));
+    const roots: any[] = [];
+
+    for (const s of all) {
+      const node = byId.get(s.id)!;
+      if (s.parent_id) {
+        const parent = byId.get(s.parent_id);
+        if (parent) parent.children.push(node);
+      } else {
+        roots.push(node);
+      }
+    }
+
+    return res.json(roots);
+  } catch (err) {
+    console.error('GET /statuses/tree error:', err);
+    return res.status(500).json({ error: 'Failed to build status tree' });
+  }
+});
+
 // GET /providers -> lista los providers (más recientes primero)
 router.get('/providers', async (_req, res) => {
   try {
@@ -42,13 +70,15 @@ router.post('/patients', async (req, res) => {
   try {
     const { full_name, email, phone, provider_id = null, status_id = null } = req.body ?? {};
 
-    // Validaciones mínimas
-    if (!full_name || !email || !phone) {
-      return res.status(400).json({ error: 'full_name, email, phone are required' });
+    // Reglas mínimas
+    if (!full_name || typeof full_name !== 'string' || full_name.trim().length < 2) {
+      return res.status(400).json({ error: 'full_name is required (min 2 chars)' });
     }
-    // (Opcional simple) email formato básico
-    if (!/^\S+@\S+\.\S+$/.test(email)) {
+    if (!email || typeof email !== 'string' || !/^\S+@\S+\.\S+$/.test(email)) {
       return res.status(400).json({ error: 'email is invalid' });
+    }
+    if (!phone || typeof phone !== 'string' || phone.trim().length < 5) {
+      return res.status(400).json({ error: 'phone is required (min 5 chars)' });
     }
 
     // Si envían provider/status, verifica existencia
@@ -61,8 +91,15 @@ router.post('/patients', async (req, res) => {
       if (!status) return res.status(400).json({ error: 'status_id not found' });
     }
 
-    const id = uuidv4();
-    const patient = await PatientModel.create({ id, full_name, email, phone, provider_id, status_id });
+    const id = require('crypto').randomUUID();
+    const patient = await PatientModel.create({
+      id,
+      full_name: full_name.trim(),
+      email: email.trim().toLowerCase(),
+      phone: phone.trim(),
+      provider_id,
+      status_id,
+    });
     return res.status(201).json(patient);
   } catch (err) {
     console.error('POST /patients error:', err);
@@ -70,40 +107,37 @@ router.post('/patients', async (req, res) => {
   }
 });
 
-// GET /patients -> lista básica con provider/status "join" manual (2 queries)
+// GET /patients
 router.get('/patients', async (_req, res) => {
   try {
-    // Traemos pacientes
-    const patients = await PatientModel.findAll({ order: [['created_at', 'DESC']] });
-
-    // IDs únicos de providers/statuses referenciados
-    const providerIds = [...new Set(patients.map(p => p.provider_id).filter(Boolean))] as string[];
-    const statusIds = [...new Set(patients.map(p => p.status_id).filter(Boolean))] as string[];
-
-    const providers = providerIds.length
-      ? await ProviderModel.findAll({ where: { id: providerIds } as any })
-      : [];
-    const statuses = statusIds.length
-      ? await StatusModel.findAll({ where: { id: statusIds } as any })
-      : [];
-
-    const providersMap = new Map(providers.map(p => [p.id, p]));
-    const statusesMap = new Map(statuses.map(s => [s.id, s]));
-
-    const result = patients.map(p => ({
-      id: p.id,
-      full_name: p.full_name,
-      email: p.email,
-      phone: p.phone,
-      created_at: p.created_at,
-      provider: p.provider_id ? providersMap.get(p.provider_id) : null,
-      status: p.status_id ? statusesMap.get(p.status_id) : null,
-    }));
-
-    return res.json(result);
+    const patients = await PatientModel.findAll({
+      order: [['created_at', 'DESC']],
+      include: [
+        { model: ProviderModel, as: 'provider', attributes: ['id', 'full_name', 'specialty'] },
+        { model: StatusModel, as: 'status', attributes: ['id', 'name'] }
+      ]
+    });
+    return res.json(patients);
   } catch (err) {
     console.error('GET /patients error:', err);
     return res.status(500).json({ error: 'Failed to fetch patients' });
+  }
+});
+
+// GET /patients/:id -> detalle con include
+router.get('/patients/:id', async (req, res) => {
+  try {
+    const patient = await PatientModel.findByPk(req.params.id, {
+      include: [
+        { model: ProviderModel, as: 'provider', attributes: ['id', 'full_name', 'specialty'] },
+        { model: StatusModel, as: 'status', attributes: ['id', 'name'] }
+      ]
+    });
+    if (!patient) return res.status(404).json({ error: 'patient not found' });
+    return res.json(patient);
+  } catch (err) {
+    console.error('GET /patients/:id error:', err);
+    return res.status(500).json({ error: 'Failed to fetch patient' });
   }
 });
 
