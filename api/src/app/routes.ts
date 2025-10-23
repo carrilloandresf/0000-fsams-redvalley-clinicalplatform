@@ -65,6 +65,32 @@ router.get('/providers', async (_req, res) => {
   }
 });
 
+// POST /providers -> crea un nuevo provider
+router.post('/providers', async (req, res) => {
+  try {
+    const { full_name, specialty } = req.body ?? {};
+
+    if (!full_name || typeof full_name !== 'string' || full_name.trim().length < 2) {
+      return res.status(400).json({ error: 'full_name is required (min 2 chars)' });
+    }
+
+    if (!specialty || typeof specialty !== 'string' || specialty.trim().length < 2) {
+      return res.status(400).json({ error: 'specialty is required (min 2 chars)' });
+    }
+
+    const provider = await ProviderModel.create({
+      id: uuidv4(),
+      full_name: full_name.trim(),
+      specialty: specialty.trim(),
+    });
+
+    return res.status(201).json(provider);
+  } catch (err) {
+    console.error('POST /providers error:', err);
+    return res.status(500).json({ error: 'Failed to create provider' });
+  }
+});
+
 // POST /patients  -> crea paciente (sin provider/status por defecto)
 router.post('/patients', async (req, res) => {
   try {
