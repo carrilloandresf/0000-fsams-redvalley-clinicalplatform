@@ -15,8 +15,8 @@
       "executor": "@nx/js:tsc",
       "options": {
         "outputPath": "dist/apps/api",
-        "main": "apps/api/src/main.ts",
-        "tsConfig": "apps/api/tsconfig.app.json"
+        "main": "api/src/main.ts",
+        "tsConfig": "api/tsconfig.app.json"
       }
     }
   }
