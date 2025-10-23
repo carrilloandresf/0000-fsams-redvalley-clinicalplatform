@@ -8,25 +8,21 @@ import { resolve } from 'node:path';
 const projectRoot = __dirname;
 const workspaceRoot = resolve(projectRoot, '..');
 
-export default defineConfig(() => ({
+export default defineConfig({
   root: projectRoot,
   cacheDir: '../node_modules/.vite/web',
   server: {
-    port: 4200,
+    port: 5173,
     host: 'localhost',
     fs: {
       allow: [projectRoot, workspaceRoot],
     },
   },
   preview: {
-    port: 4200,
+    port: 4173,
     host: 'localhost',
   },
   plugins: [react(), nxViteTsPaths(), nxCopyAssetsPlugin(['*.md'])],
-  // Uncomment this if you are using workers.
-  // worker: {
-  //  plugins: [ nxViteTsPaths() ],
-  // },
   build: {
     outDir: '../dist/web',
     emptyOutDir: true,
@@ -40,13 +36,15 @@ export default defineConfig(() => ({
     environment: 'jsdom',
     setupFiles: './src/test/setup.ts',
     coverage: {
-      provider: 'v8',
+      provider: 'v8' as const,
       reporter: ['text', 'lcov'],
-      statements: 95,
-      branches: 95,
-      functions: 95,
-      lines: 95,
+      thresholds: {
+        statements: 95,
+        branches: 95,
+        functions: 95,
+        lines: 95,
+      }
     },
     css: true,
   },
-}));
+});
