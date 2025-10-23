@@ -94,6 +94,14 @@ async function invokeHandler(
   await handler((req ?? {}) as Request, res, noopNext as unknown as NextFunction);
 }
 
+function getFirstCallOrder(mockFn: jest.Mock): number {
+  const [order] = mockFn.mock.invocationCallOrder;
+  if (order == null) {
+    throw new Error('Mock was not called');
+  }
+  return order;
+}
+
 describe('app routes', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -501,6 +509,9 @@ describe('app routes', () => {
     expect(transaction.commit).not.toHaveBeenCalled();
     expect(statusHistoryModelMock.create).not.toHaveBeenCalled();
     expect(update).not.toHaveBeenCalled();
+    expect(getFirstCallOrder(transaction.rollback)).toBeLessThan(
+      getFirstCallOrder(res.status as unknown as jest.Mock)
+    );
     expect(res.statusCode).toBe(400);
     expect(res.payload).toEqual({ error: 'status_id not found' });
   });
@@ -525,6 +536,9 @@ describe('app routes', () => {
     );
     expect(transaction.rollback).not.toHaveBeenCalled();
     expect(transaction.commit).toHaveBeenCalledTimes(1);
+    const commitOrder = getFirstCallOrder(transaction.commit);
+    expect(getFirstCallOrder(update)).toBeLessThan(commitOrder);
+    expect(getFirstCallOrder(statusHistoryModelMock.create)).toBeLessThan(commitOrder);
     expect(res.payload).toEqual({ ok: true });
     expect(res.statusCode).toBe(200);
   });
