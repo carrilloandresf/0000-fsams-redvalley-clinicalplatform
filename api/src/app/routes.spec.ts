@@ -404,8 +404,25 @@ describe('app routes', () => {
     const res = createRes();
     const update = jest.fn();
     patientModelMock.findByPk.mockResolvedValueOnce({ id: 'p1', update });
-    providerModelMock.findByPk.mockResolvedValueOnce(null);
-    await invokeHandler(handler, { params: { id: 'p1' }, body: { provider_id: 'prov' } } as unknown as Request, res);
+    let resolveProvider: ((value: null) => void) | undefined;
+    const providerPromise = new Promise<null>(resolve => {
+      resolveProvider = resolve;
+    });
+    providerModelMock.findByPk.mockReturnValueOnce(providerPromise);
+
+    const invocation = invokeHandler(
+      handler,
+      { params: { id: 'p1' }, body: { provider_id: 'prov' } } as Partial<Request>,
+      res
+    );
+
+    await Promise.resolve();
+    expect(update).not.toHaveBeenCalled();
+
+    expect(resolveProvider).toBeDefined();
+    resolveProvider!(null);
+    await invocation;
+
     expect(res.statusCode).toBe(400);
     expect(res.payload).toEqual({ error: 'provider_id not found' });
     expect(update).not.toHaveBeenCalled();
