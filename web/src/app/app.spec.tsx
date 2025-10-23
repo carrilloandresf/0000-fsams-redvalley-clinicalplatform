@@ -1,26 +1,45 @@
-import { render } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
+import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 
 import App from './app';
 
+vi.mock('../features/patients/patientsList', () => ({
+  default: () => <div>Listado de pacientes</div>,
+}));
+
+vi.mock('../features/patients/newPatientForm', () => ({
+  default: () => <div>Formulario nuevo paciente</div>,
+}));
+
+vi.mock('../features/providers/newProviderForm', () => ({
+  default: () => <div>Formulario proveedor</div>,
+}));
+
+vi.mock('../features/patients/patientDetail', () => ({
+  default: () => <div>Detalle paciente</div>,
+}));
+
 describe('App', () => {
-  it('should render successfully', () => {
-    const { baseElement } = render(
-      <BrowserRouter>
+  it('renders navigation links', () => {
+    render(
+      <MemoryRouter>
         <App />
-      </BrowserRouter>
+      </MemoryRouter>
     );
-    expect(baseElement).toBeTruthy();
+
+    expect(screen.getByText('Clinical Platform')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Pacientes' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Nuevo paciente' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Nuevo proveedor' })).toBeInTheDocument();
   });
 
-  it('should have a greeting as the title', () => {
-    const { getAllByText } = render(
-      <BrowserRouter>
+  it('navigates to provider form route', () => {
+    render(
+      <MemoryRouter initialEntries={['/providers/new']}>
         <App />
-      </BrowserRouter>
+      </MemoryRouter>
     );
-    expect(
-      getAllByText(new RegExp('Welcome web', 'gi')).length > 0
-    ).toBeTruthy();
+
+    expect(screen.getByText('Formulario proveedor')).toBeInTheDocument();
   });
 });

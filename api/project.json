@@ -24,6 +24,16 @@
         "tsConfig": "api/tsconfig.app.json"
       }
     },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/api"],
+      "options": {
+        "jestConfig": "api/jest.config.ts",
+        "runInBand": true,
+        "passWithNoTests": false,
+        "codeCoverage": true
+      }
+    },
     "lint": {
       "executor": "@nx/eslint:lint",
       "options": {
