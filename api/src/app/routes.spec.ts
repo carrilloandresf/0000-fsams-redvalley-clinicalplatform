@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import type { Request, Response } from 'express';
+import type { Request, Response, NextFunction, RequestHandler } from 'express';
 
 const patientModelMock = {
   findAll: jest.fn(),
@@ -57,14 +57,14 @@ jest.mock('crypto', () => ({
 
 import { router } from './routes';
 
-function getHandler(method: 'get' | 'post', path: string) {
+function getHandler(method: 'get' | 'post', path: string): RequestHandler {
   const layer = (router as Router & { stack: any[] }).stack.find(
     (l: any) => l.route && l.route.path === path && l.route.methods[method]
   );
   if (!layer) {
     throw new Error(`Handler for ${method.toUpperCase()} ${path} not found`);
   }
-  return layer.route.stack[0].handle;
+  return layer.route.stack[0].handle as RequestHandler;
 }
 
 function createRes() {
@@ -84,9 +84,20 @@ function createRes() {
   return res as unknown as Response & { statusCode: number; payload: any };
 }
 
+const noopNext = jest.fn<ReturnType<NextFunction>, Parameters<NextFunction>>();
+
+async function invokeHandler(
+  handler: RequestHandler,
+  req: Partial<Request> | undefined,
+  res: Response & { statusCode: number; payload: any }
+) {
+  await handler((req ?? {}) as Request, res, noopNext);
+}
+
 describe('app routes', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    noopNext.mockReset();
     sequelizeMock.transaction.mockImplementation(async () => ({
       commit: jest.fn(),
       rollback: jest.fn(),
@@ -96,7 +107,7 @@ describe('app routes', () => {
   test('GET /health returns ok', async () => {
     const handler = getHandler('get', '/health');
     const res = createRes();
-    await handler({} as Request, res);
+    await invokeHandler(handler, {} as Request, res);
     expect(res.statusCode).toBe(200);
     expect(res.json).toHaveBeenCalledWith({ ok: true });
   });
@@ -105,7 +116,7 @@ describe('app routes', () => {
     statusModelMock.findAll.mockResolvedValueOnce([{ id: '1' }]);
     const handler = getHandler('get', '/statuses');
     const res = createRes();
-    await handler({} as Request, res);
+    await invokeHandler(handler, {} as Request, res);
     expect(statusModelMock.findAll).toHaveBeenCalledWith({ order: [['order', 'ASC'], ['name', 'ASC']] });
     expect(res.payload).toEqual([{ id: '1' }]);
   });
@@ -116,7 +127,7 @@ describe('app routes', () => {
     const handler = getHandler('get', '/statuses');
     const res = createRes();
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
-    await handler({} as Request, res);
+    await invokeHandler(handler, {} as Request, res);
     expect(res.statusCode).toBe(500);
     expect(res.payload).toEqual({ error: 'Failed to fetch statuses' });
     consoleSpy.mockRestore();
@@ -129,7 +140,7 @@ describe('app routes', () => {
     ]);
     const handler = getHandler('get', '/statuses/tree');
     const res = createRes();
-    await handler({} as Request, res);
+    await invokeHandler(handler, {} as Request, res);
     expect(res.statusCode).toBe(200);
     expect(res.payload).toEqual([
       {
@@ -156,7 +167,7 @@ describe('app routes', () => {
     const handler = getHandler('get', '/statuses/tree');
     const res = createRes();
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
-    await handler({} as Request, res);
+    await invokeHandler(handler, {} as Request, res);
     expect(res.statusCode).toBe(500);
     expect(res.payload).toEqual({ error: 'Failed to build status tree' });
     consoleSpy.mockRestore();
@@ -166,7 +177,7 @@ describe('app routes', () => {
     providerModelMock.findAll.mockResolvedValueOnce([{ id: 'p1' }]);
     const handler = getHandler('get', '/providers');
     const res = createRes();
-    await handler({} as Request, res);
+    await invokeHandler(handler, {} as Request, res);
     expect(providerModelMock.findAll).toHaveBeenCalledWith({ order: [['created_at', 'DESC']] });
     expect(res.payload).toEqual([{ id: 'p1' }]);
   });
@@ -176,7 +187,7 @@ describe('app routes', () => {
     const handler = getHandler('get', '/providers');
     const res = createRes();
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
-    await handler({} as Request, res);
+    await invokeHandler(handler, {} as Request, res);
     expect(res.statusCode).toBe(500);
     expect(res.payload).toEqual({ error: 'Failed to fetch providers' });
     consoleSpy.mockRestore();
@@ -185,7 +196,7 @@ describe('app routes', () => {
   test('POST /providers validates name', async () => {
     const handler = getHandler('post', '/providers');
     const res = createRes();
-    await handler({ body: { specialty: 'A' } } as Request, res);
+    await invokeHandler(handler, { body: { specialty: 'A' } } as Request, res);
     expect(res.statusCode).toBe(400);
     expect(res.payload).toEqual({ error: 'full_name is required (min 2 chars)' });
   });
@@ -193,7 +204,7 @@ describe('app routes', () => {
   test('POST /providers validates specialty', async () => {
     const handler = getHandler('post', '/providers');
     const res = createRes();
-    await handler({ body: { full_name: 'Dr. A', specialty: 'x' } } as Request, res);
+    await invokeHandler(handler, { body: { full_name: 'Dr. A', specialty: 'x' } } as Request, res);
     expect(res.statusCode).toBe(400);
     expect(res.payload).toEqual({ error: 'specialty is required (min 2 chars)' });
   });
@@ -202,7 +213,7 @@ describe('app routes', () => {
     providerModelMock.create.mockResolvedValueOnce({ id: 'new-provider', full_name: 'Dr. B' });
     const handler = getHandler('post', '/providers');
     const res = createRes();
-    await handler({ body: { full_name: ' Dr. B ', specialty: ' Cardio ' } } as Request, res);
+    await invokeHandler(handler, { body: { full_name: ' Dr. B ', specialty: ' Cardio ' } } as Request, res);
     expect(providerModelMock.create).toHaveBeenCalledWith({
       id: 'uuid-mock',
       full_name: 'Dr. B',
@@ -217,7 +228,7 @@ describe('app routes', () => {
     const handler = getHandler('post', '/providers');
     const res = createRes();
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
-    await handler({ body: { full_name: 'Dr. C', specialty: 'Onco' } } as Request, res);
+    await invokeHandler(handler, { body: { full_name: 'Dr. C', specialty: 'Onco' } } as Request, res);
     expect(res.statusCode).toBe(500);
     expect(res.payload).toEqual({ error: 'Failed to create provider' });
     consoleSpy.mockRestore();
@@ -226,7 +237,7 @@ describe('app routes', () => {
   test('POST /patients validates full name', async () => {
     const handler = getHandler('post', '/patients');
     const res = createRes();
-    await handler({ body: { email: 'test@test.com', phone: '12345' } } as Request, res);
+    await invokeHandler(handler, { body: { email: 'test@test.com', phone: '12345' } } as Request, res);
     expect(res.statusCode).toBe(400);
     expect(res.payload).toEqual({ error: 'full_name is required (min 2 chars)' });
   });
@@ -234,7 +245,7 @@ describe('app routes', () => {
   test('POST /patients validates email format', async () => {
     const handler = getHandler('post', '/patients');
     const res = createRes();
-    await handler({ body: { full_name: 'John', email: 'bad', phone: '12345' } } as Request, res);
+    await invokeHandler(handler, { body: { full_name: 'John', email: 'bad', phone: '12345' } } as Request, res);
     expect(res.statusCode).toBe(400);
     expect(res.payload).toEqual({ error: 'email is invalid' });
   });
@@ -242,7 +253,7 @@ describe('app routes', () => {
   test('POST /patients validates phone length', async () => {
     const handler = getHandler('post', '/patients');
     const res = createRes();
-    await handler({ body: { full_name: 'John', email: 'john@test.com', phone: '123' } } as Request, res);
+    await invokeHandler(handler, { body: { full_name: 'John', email: 'john@test.com', phone: '123' } } as Request, res);
     expect(res.statusCode).toBe(400);
     expect(res.payload).toEqual({ error: 'phone is required (min 5 chars)' });
   });
@@ -251,7 +262,7 @@ describe('app routes', () => {
     const handler = getHandler('post', '/patients');
     const res = createRes();
     providerModelMock.findByPk.mockResolvedValueOnce(null);
-    await handler({
+    await invokeHandler(handler, {
       body: { full_name: 'John', email: 'john@test.com', phone: '12345', provider_id: 'p', status_id: null },
     } as Request, res);
     expect(res.statusCode).toBe(400);
@@ -263,7 +274,7 @@ describe('app routes', () => {
     const res = createRes();
     providerModelMock.findByPk.mockResolvedValueOnce({ id: 'p' });
     statusModelMock.findByPk.mockResolvedValueOnce(null);
-    await handler({
+    await invokeHandler(handler, {
       body: { full_name: 'John', email: 'john@test.com', phone: '12345', status_id: 's', provider_id: null },
     } as Request, res);
     expect(res.statusCode).toBe(400);
@@ -276,7 +287,7 @@ describe('app routes', () => {
     patientModelMock.create.mockResolvedValueOnce({ id: 'created' });
     const handler = getHandler('post', '/patients');
     const res = createRes();
-    await handler({
+    await invokeHandler(handler, {
       body: {
         full_name: ' John ',
         email: ' JOHN@test.com ',
@@ -302,7 +313,7 @@ describe('app routes', () => {
     const handler = getHandler('post', '/patients');
     const res = createRes();
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
-    await handler({
+    await invokeHandler(handler, {
       body: { full_name: 'John', email: 'john@test.com', phone: '12345' },
     } as Request, res);
     expect(res.statusCode).toBe(500);
@@ -314,7 +325,7 @@ describe('app routes', () => {
     patientModelMock.findAll.mockResolvedValueOnce([{ id: 'p1' }]);
     const handler = getHandler('get', '/patients');
     const res = createRes();
-    await handler({} as Request, res);
+    await invokeHandler(handler, {} as Request, res);
     expect(patientModelMock.findAll).toHaveBeenCalledWith({
       order: [['created_at', 'DESC']],
       include: [
@@ -330,7 +341,7 @@ describe('app routes', () => {
     const handler = getHandler('get', '/patients');
     const res = createRes();
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
-    await handler({} as Request, res);
+    await invokeHandler(handler, {} as Request, res);
     expect(res.statusCode).toBe(500);
     expect(res.payload).toEqual({ error: 'Failed to fetch patients' });
     consoleSpy.mockRestore();
@@ -340,7 +351,7 @@ describe('app routes', () => {
     patientModelMock.findByPk.mockResolvedValueOnce({ id: 'p1' });
     const handler = getHandler('get', '/patients/:id');
     const res = createRes();
-    await handler({ params: { id: 'p1' } } as unknown as Request, res);
+    await invokeHandler(handler, { params: { id: 'p1' } } as unknown as Request, res);
     expect(patientModelMock.findByPk).toHaveBeenCalledWith('p1', {
       include: [
         { model: providerModelMock, as: 'provider', attributes: ['id', 'full_name', 'specialty'] },
@@ -354,7 +365,7 @@ describe('app routes', () => {
     patientModelMock.findByPk.mockResolvedValueOnce(null);
     const handler = getHandler('get', '/patients/:id');
     const res = createRes();
-    await handler({ params: { id: 'missing' } } as unknown as Request, res);
+    await invokeHandler(handler, { params: { id: 'missing' } } as unknown as Request, res);
     expect(res.statusCode).toBe(404);
     expect(res.payload).toEqual({ error: 'patient not found' });
   });
@@ -364,7 +375,7 @@ describe('app routes', () => {
     const handler = getHandler('get', '/patients/:id');
     const res = createRes();
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
-    await handler({ params: { id: 'p1' } } as unknown as Request, res);
+    await invokeHandler(handler, { params: { id: 'p1' } } as unknown as Request, res);
     expect(res.statusCode).toBe(500);
     expect(res.payload).toEqual({ error: 'Failed to fetch patient' });
     consoleSpy.mockRestore();
@@ -373,7 +384,7 @@ describe('app routes', () => {
   test('POST /patients/:id/assign-provider validates payload', async () => {
     const handler = getHandler('post', '/patients/:id/assign-provider');
     const res = createRes();
-    await handler({ params: { id: 'p1' }, body: {} } as unknown as Request, res);
+    await invokeHandler(handler, { params: { id: 'p1' }, body: {} } as unknown as Request, res);
     expect(res.statusCode).toBe(400);
     expect(res.payload).toEqual({ error: 'provider_id is required' });
   });
@@ -383,7 +394,7 @@ describe('app routes', () => {
     const res = createRes();
     patientModelMock.findByPk.mockResolvedValueOnce(null);
     providerModelMock.findByPk.mockResolvedValueOnce({ id: 'prov' });
-    await handler({ params: { id: 'p1' }, body: { provider_id: 'prov' } } as unknown as Request, res);
+    await invokeHandler(handler, { params: { id: 'p1' }, body: { provider_id: 'prov' } } as unknown as Request, res);
     expect(res.statusCode).toBe(404);
     expect(res.payload).toEqual({ error: 'patient not found' });
   });
@@ -393,7 +404,7 @@ describe('app routes', () => {
     const res = createRes();
     patientModelMock.findByPk.mockResolvedValueOnce({ id: 'p1', update: jest.fn() });
     providerModelMock.findByPk.mockResolvedValueOnce(null);
-    await handler({ params: { id: 'p1' }, body: { provider_id: 'prov' } } as unknown as Request, res);
+    await invokeHandler(handler, { params: { id: 'p1' }, body: { provider_id: 'prov' } } as unknown as Request, res);
     expect(res.statusCode).toBe(400);
     expect(res.payload).toEqual({ error: 'provider_id not found' });
   });
@@ -404,7 +415,7 @@ describe('app routes', () => {
     providerModelMock.findByPk.mockResolvedValueOnce({ id: 'prov' });
     const handler = getHandler('post', '/patients/:id/assign-provider');
     const res = createRes();
-    await handler({ params: { id: 'p1' }, body: { provider_id: 'prov' } } as unknown as Request, res);
+    await invokeHandler(handler, { params: { id: 'p1' }, body: { provider_id: 'prov' } } as unknown as Request, res);
     expect(update).toHaveBeenCalledWith({ provider_id: 'prov' });
     expect(res.payload).toEqual({ ok: true });
   });
@@ -415,7 +426,7 @@ describe('app routes', () => {
     const handler = getHandler('post', '/patients/:id/assign-provider');
     const res = createRes();
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
-    await handler({ params: { id: 'p1' }, body: { provider_id: 'prov' } } as unknown as Request, res);
+    await invokeHandler(handler, { params: { id: 'p1' }, body: { provider_id: 'prov' } } as unknown as Request, res);
     expect(res.statusCode).toBe(500);
     expect(res.payload).toEqual({ error: 'Failed to assign provider' });
     consoleSpy.mockRestore();
@@ -426,7 +437,7 @@ describe('app routes', () => {
     const res = createRes();
     const transaction = { commit: jest.fn(), rollback: jest.fn() };
     sequelizeMock.transaction.mockResolvedValueOnce(transaction);
-    await handler({ params: { id: 'p1' }, body: {} } as unknown as Request, res);
+    await invokeHandler(handler, { params: { id: 'p1' }, body: {} } as unknown as Request, res);
     expect(transaction.rollback).toHaveBeenCalledTimes(1);
     expect(res.statusCode).toBe(400);
     expect(res.payload).toEqual({ error: 'status_id is required' });
@@ -439,7 +450,7 @@ describe('app routes', () => {
     sequelizeMock.transaction.mockResolvedValueOnce(transaction);
     patientModelMock.findByPk.mockResolvedValueOnce(null);
     statusModelMock.findByPk.mockResolvedValueOnce({ id: 's' });
-    await handler({ params: { id: 'p1' }, body: { status_id: 's' } } as unknown as Request, res);
+    await invokeHandler(handler, { params: { id: 'p1' }, body: { status_id: 's' } } as unknown as Request, res);
     expect(transaction.rollback).toHaveBeenCalledTimes(1);
     expect(res.statusCode).toBe(404);
     expect(res.payload).toEqual({ error: 'patient not found' });
@@ -452,7 +463,7 @@ describe('app routes', () => {
     sequelizeMock.transaction.mockResolvedValueOnce(transaction);
     patientModelMock.findByPk.mockResolvedValueOnce({ id: 'p1', update: jest.fn() });
     statusModelMock.findByPk.mockResolvedValueOnce(null);
-    await handler({ params: { id: 'p1' }, body: { status_id: 's' } } as unknown as Request, res);
+    await invokeHandler(handler, { params: { id: 'p1' }, body: { status_id: 's' } } as unknown as Request, res);
     expect(transaction.rollback).toHaveBeenCalledTimes(1);
     expect(res.statusCode).toBe(400);
     expect(res.payload).toEqual({ error: 'status_id not found' });
@@ -467,7 +478,7 @@ describe('app routes', () => {
     statusHistoryModelMock.create.mockResolvedValueOnce({ id: 'history' });
     const handler = getHandler('post', '/patients/:id/change-status');
     const res = createRes();
-    await handler({ params: { id: 'p1' }, body: { status_id: 's1' } } as unknown as Request, res);
+    await invokeHandler(handler, { params: { id: 'p1' }, body: { status_id: 's1' } } as unknown as Request, res);
     expect(update).toHaveBeenCalledWith({ status_id: 's1' }, { transaction });
     expect(statusHistoryModelMock.create).toHaveBeenCalledWith(
       { id: 'crypto-mock', patient_id: 'p1', status_id: 's1' },
@@ -485,7 +496,7 @@ describe('app routes', () => {
     patientModelMock.findByPk.mockRejectedValueOnce(new Error('fail'));
     statusModelMock.findByPk.mockResolvedValueOnce({ id: 's1' });
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
-    await handler({ params: { id: 'p1' }, body: { status_id: 's1' } } as unknown as Request, res);
+    await invokeHandler(handler, { params: { id: 'p1' }, body: { status_id: 's1' } } as unknown as Request, res);
     expect(transaction.rollback).toHaveBeenCalledTimes(1);
     expect(res.statusCode).toBe(500);
     expect(res.payload).toEqual({ error: 'Failed to change status' });
@@ -496,7 +507,7 @@ describe('app routes', () => {
     const handler = getHandler('get', '/patients/:id/history');
     const res = createRes();
     patientModelMock.findByPk.mockResolvedValueOnce(null);
-    await handler({ params: { id: 'p1' } } as unknown as Request, res);
+    await invokeHandler(handler, { params: { id: 'p1' } } as unknown as Request, res);
     expect(res.statusCode).toBe(404);
     expect(res.payload).toEqual({ error: 'patient not found' });
   });
@@ -506,7 +517,7 @@ describe('app routes', () => {
     const res = createRes();
     patientModelMock.findByPk.mockResolvedValueOnce({ id: 'p1' });
     statusHistoryModelMock.findAll.mockResolvedValueOnce([{ id: 'h1' }]);
-    await handler({ params: { id: 'p1' } } as unknown as Request, res);
+    await invokeHandler(handler, { params: { id: 'p1' } } as unknown as Request, res);
     expect(statusHistoryModelMock.findAll).toHaveBeenCalledWith({
       where: { patient_id: 'p1' } as any,
       order: [['changed_at', 'DESC']],
@@ -521,7 +532,7 @@ describe('app routes', () => {
     patientModelMock.findByPk.mockResolvedValueOnce({ id: 'p1' });
     statusHistoryModelMock.findAll.mockRejectedValueOnce(new Error('fail'));
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
-    await handler({ params: { id: 'p1' } } as unknown as Request, res);
+    await invokeHandler(handler, { params: { id: 'p1' } } as unknown as Request, res);
     expect(res.statusCode).toBe(500);
     expect(res.payload).toEqual({ error: 'Failed to fetch history' });
     consoleSpy.mockRestore();

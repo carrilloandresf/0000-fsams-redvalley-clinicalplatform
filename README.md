@@ -111,8 +111,23 @@ npm run build:web        # Build del frontend
 npm run build:all        # Build de todos los proyectos Nx
 npm run lint             # Análisis ESLint
 npm run format           # Formateo con Prettier
+npm test                 # Ejecuta las pruebas (Nx run-many con cobertura)
 npm run graph            # Visualizador de dependencias Nx
 ```
+
+🧪 Pruebas automatizadas
+-----------------------
+```bash
+# Ejecutar únicamente la suite de la API (Jest + cobertura)
+npx nx test api
+
+# Ejecutar únicamente la suite del frontend (Vitest)
+npx nx test web
+
+# Forzar la regeneración de cobertura desde la API
+npx nx test api -- --coverage
+```
+> Consejo: asegúrate de haber instalado las dependencias (`npm install`) antes de ejecutar los comandos anteriores.
 
 🔌 API Endpoints
 ----------------
