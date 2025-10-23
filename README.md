@@ -4,7 +4,7 @@ Red Valley Test
 
 ## 🏗️ Arquitectura del Sistema
 -----------------
-![Logo](src\img\architectureDiagram.png)
+![Logo](.\src\img\architectureDiagram.png)
 
 
 📋 Prerrequisitos
