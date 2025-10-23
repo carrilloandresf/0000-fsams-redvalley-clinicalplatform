@@ -10,7 +10,7 @@ import { useStatusesQuery } from '../features/statuses/api';
  * will be disabled and the user will not be able to select a new option.
  *
  * @param {string | null} value - The currently selected status ID.
- * @param {(id: string) => void} onChange - A callback function that will be
+ * @param {(id: string | null) => void} onChange - A callback function that will be
  *   called when the user selects a new option.
  * @param {boolean} disabled - Whether or not the select element should be
  *   disabled.
@@ -19,8 +19,8 @@ import { useStatusesQuery } from '../features/statuses/api';
 export default function StatusSelect({
   value,
   onChange,
-  disabled
-}: { value?: string | null; onChange: (id: string) => void; disabled?: boolean }) {
+  disabled,
+}: { value?: string | null; onChange: (id: string | null) => void; disabled?: boolean }) {
   const { data, isLoading } = useStatusesQuery();
 
   return (
@@ -28,7 +28,7 @@ export default function StatusSelect({
       className="border rounded px-2 py-1 text-sm"
       value={value ?? ''}
       disabled={disabled || isLoading}
-      onChange={(e) => onChange(e.target.value)}
+      onChange={(e) => onChange(e.target.value || null)}
     >
       <option value="">(Sin estado)</option>
       {data?.map((s) => (
