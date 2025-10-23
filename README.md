@@ -127,6 +127,7 @@ npm run graph            # Visualizador de dependencias Nx
 - `GET /statuses` – Lista de estados médicos
 - `GET /statuses/tree` – Árbol jerárquico de estados
 - `GET /providers` – Lista de proveedores médicos
+- `POST /providers` – Crear proveedor médico (`full_name`, `specialty`)
 
 **Utilidades**
 - `GET /health` – Health check del sistema
