@@ -6,7 +6,9 @@
     "moduleResolution": "node10",
     "jsx": "react-jsx",
     "types": [
-      "jest",
+      "vitest",
+      "vitest/globals",
+      "@testing-library/jest-dom",
       "node",
       "@nx/react/typings/cssmodule.d.ts",
       "@nx/react/typings/image.d.ts"

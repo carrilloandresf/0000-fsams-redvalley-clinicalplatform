@@ -19,7 +19,7 @@
     "lint": "nx run-many --target=lint --all",
     "format": "nx format:write",
     "graph": "nx graph",
-    "test": "echo \"No tests configured\""
+    "test": "./node_modules/.bin/nx run-many --target=test --all -- --coverage"
   },
   "workspaces": [
     "api"

@@ -28,4 +28,18 @@ export default defineConfig(() => ({
       transformMixedEsModules: true,
     },
   },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './src/test/setup.ts',
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'lcov'],
+      statements: 95,
+      branches: 95,
+      functions: 95,
+      lines: 95,
+    },
+    css: true,
+  },
 }));
