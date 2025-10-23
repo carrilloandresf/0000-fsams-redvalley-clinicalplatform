@@ -1,4 +1,6 @@
-import { usePatientsQuery } from './api';
+import { usePatientsQuery, useAssignProviderMutation, useChangeStatusMutation } from './api';
+import ProviderSelect from '../../components/providerSelect';
+import StatusSelect from '../../components/statusSelect';
 
 export default function PatientsList() {
   const { data, isLoading, isError, error } = usePatientsQuery();
@@ -21,15 +23,32 @@ export default function PatientsList() {
             </tr>
           </thead>
           <tbody>
-            {data?.map((p) => (
-              <tr key={p.id} className="border-t">
-                <td className="p-3">{p.full_name}</td>
-                <td className="p-3">{p.email}</td>
-                <td className="p-3">{p.phone}</td>
-                <td className="p-3">{p.provider ? p.provider.full_name : <span className="text-slate-400">—</span>}</td>
-                <td className="p-3">{p.status ? p.status.name : <span className="text-slate-400">—</span>}</td>
-              </tr>
-            ))}
+            {data?.map((p) => {
+              const assignProvider = useAssignProviderMutation(p.id);
+              const changeStatus = useChangeStatusMutation(p.id);
+
+              return (
+                <tr key={p.id} className="border-t">
+                  <td className="p-3">{p.full_name}</td>
+                  <td className="p-3">{p.email}</td>
+                  <td className="p-3">{p.phone}</td>
+                  <td className="p-3">
+                    <ProviderSelect
+                      value={p.provider?.id ?? null}
+                      disabled={assignProvider.isPending}
+                      onChange={(id) => id ? assignProvider.mutate(id) : assignProvider.mutateAsync('')}
+                    />
+                  </td>
+                  <td className="p-3">
+                    <StatusSelect
+                      value={p.status?.id ?? null}
+                      disabled={changeStatus.isPending}
+                      onChange={(id) => id ? changeStatus.mutate(id) : changeStatus.mutateAsync('')}
+                    />
+                  </td>
+                </tr>
+              );
+            })}
             {data?.length === 0 && (
               <tr><td className="p-3 text-slate-500" colSpan={5}>No hay pacientes aún</td></tr>
             )}

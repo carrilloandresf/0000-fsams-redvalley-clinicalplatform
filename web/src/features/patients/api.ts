@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
-import type { Patient, NewPatientInput } from '../../types';
+import type { Patient, NewPatientInput, Provider } from '../../types';
 
 /**
  * usePatientsQuery hook for fetching a list of patients.
@@ -45,6 +45,58 @@ export function useCreatePatientMutation() {
       return data as Patient;
     },
 
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['patients'] });
+    },
+  });
+}
+
+/**
+ * useAssignProviderMutation hook for assigning a provider to a patient.
+ *
+ * This hook is responsible for invalidating the cache of the 'patients' query
+ * when the mutation is successful.
+ *
+ * @param patientId The ID of the patient to assign the provider to.
+ *
+ * @returns A mutation hook with the following properties:
+ *   - mutationFn: A function that takes a provider ID as an argument
+ *     and returns a Promise that resolves when the mutation is successful.
+ *   - onSuccess: A function that will be called when the mutation is successful.
+ *     It takes no arguments and invalidates the cache of the 'patients' query.
+ */
+export function useAssignProviderMutation(patientId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (provider_id: string) => {
+      await api.post(`/patients/${patientId}/assign-provider`, { provider_id });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['patients'] });
+    },
+  });
+}
+
+/**
+ * useChangeStatusMutation hook for changing the status of a patient.
+ *
+ * This hook is responsible for invalidating the cache of the 'patients' query
+ * when the mutation is successful.
+ *
+ * @param patientId The ID of the patient to change the status of.
+ *
+ * @returns A mutation hook with the following properties:
+ *   - mutationFn: A function that takes a status ID as an argument and
+ *     returns a Promise that resolves when the mutation is successful.
+ *   - onSuccess: A function that will be called when the mutation is successful.
+ *     It takes no arguments and invalidates the cache of the 'patients' query.
+ */
+export function useChangeStatusMutation(patientId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (status_id: string) => {
+      await api.post(`/patients/${patientId}/change-status`, { status_id });
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['patients'] });
     },
