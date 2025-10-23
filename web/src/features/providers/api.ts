@@ -1,6 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
-import type { Provider } from '../../types';
+import type { Provider, NewProviderInput } from '../../types';
 
 /**
  * useProvidersQuery hook for fetching a list of providers.
@@ -22,3 +22,18 @@ export function useProvidersQuery() {
     staleTime: 5 * 60 * 1000,
   });
 }
+
+export function useCreateProviderMutation() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: NewProviderInput) => {
+      const { data } = await api.post<Provider>('/providers', payload);
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['providers'] });
+    },
+  });
+}
+

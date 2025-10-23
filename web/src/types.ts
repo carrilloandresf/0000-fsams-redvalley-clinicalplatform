@@ -5,6 +5,11 @@ export type Provider = {
   created_at: string;
 };
 
+export type NewProviderInput = {
+  full_name: string;
+  specialty: string;
+};
+
 export type Status = {
   id: string;
   name: string;
