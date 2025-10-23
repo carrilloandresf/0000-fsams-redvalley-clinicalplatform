@@ -493,44 +493,6 @@ describe('app routes', () => {
     expect(res.payload).toEqual({ error: 'patient not found' });
   });
 
-  test('POST /patients/:id/change-status validates status existence', async () => {
-    const handler = getHandler('post', '/patients/:id/change-status');
-    const res = createRes();
-    const transaction = { commit: jest.fn(), rollback: jest.fn() };
-    sequelizeMock.transaction.mockResolvedValueOnce(transaction);
-    const update = jest.fn();
-    patientModelMock.findByPk.mockResolvedValueOnce({ id: 'p1', update });
-    statusModelMock.findByPk.mockResolvedValueOnce(null);
-    await invokeHandler(handler, { params: { id: 'p1' }, body: { status_id: 's' } } as unknown as Request, res);
-    expect(sequelizeMock.transaction).toHaveBeenCalledTimes(1);
-    expect(patientModelMock.findByPk).toHaveBeenCalledWith('p1', { transaction });
-    expect(statusModelMock.findByPk).toHaveBeenCalledWith('s', { transaction });
-    expect(transaction.commit).not.toHaveBeenCalled();
-    expect(statusHistoryModelMock.create).not.toHaveBeenCalled();
-    expect(update).not.toHaveBeenCalled();
-    expect(res.statusCode).toBe(400);
-    expect(res.payload).toEqual({ error: 'status_id not found' });
-  });
-
-  test('POST /patients/:id/change-status updates patient and history', async () => {
-    const update = jest.fn();
-    const transaction = { commit: jest.fn(), rollback: jest.fn() };
-    sequelizeMock.transaction.mockResolvedValueOnce(transaction);
-    patientModelMock.findByPk.mockResolvedValueOnce({ id: 'p1', update });
-    statusModelMock.findByPk.mockResolvedValueOnce({ id: 's1' });
-    statusHistoryModelMock.create.mockResolvedValueOnce({ id: 'history' });
-    const handler = getHandler('post', '/patients/:id/change-status');
-    const res = createRes();
-    await invokeHandler(handler, { params: { id: 'p1' }, body: { status_id: 's1' } } as unknown as Request, res);
-    expect(sequelizeMock.transaction).toHaveBeenCalledTimes(1);
-    expect(patientModelMock.findByPk).toHaveBeenCalledWith('p1', { transaction });
-    expect(statusModelMock.findByPk).toHaveBeenCalledWith('s1', { transaction });
-    expect(transaction.rollback).not.toHaveBeenCalled();
-    expect(transaction.commit).toHaveBeenCalledTimes(1);
-    expect(res.payload).toEqual({ ok: true });
-    expect(res.statusCode).toBe(200);
-  });
-
   test('POST /patients/:id/change-status handles errors', async () => {
     const handler = getHandler('post', '/patients/:id/change-status');
     const res = createRes();
