@@ -24,7 +24,7 @@ npm install
 2) Infraestructura con Docker
 ```bash
 # Levantar base de datos MySQL
-docker compose up -d
+npm run compose:up
 
 # Verificar que los contenedores estén ejecutándose
 docker compose ps
@@ -33,10 +33,10 @@ docker compose ps
 3) Configuración de base de datos
 ```bash
 # Ejecutar migraciones
-npx sequelize-cli db:migrate
+npm run db:migrate
 
 # Poblar datos iniciales
-npx sequelize-cli db:seed:all
+npm run db:seed
 ```
 
 4) Variables de entorno
