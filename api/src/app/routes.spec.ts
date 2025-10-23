@@ -402,11 +402,13 @@ describe('app routes', () => {
   test('POST /patients/:id/assign-provider requires provider', async () => {
     const handler = getHandler('post', '/patients/:id/assign-provider');
     const res = createRes();
-    patientModelMock.findByPk.mockResolvedValueOnce({ id: 'p1', update: jest.fn() });
+    const update = jest.fn();
+    patientModelMock.findByPk.mockResolvedValueOnce({ id: 'p1', update });
     providerModelMock.findByPk.mockResolvedValueOnce(null);
     await invokeHandler(handler, { params: { id: 'p1' }, body: { provider_id: 'prov' } } as unknown as Request, res);
     expect(res.statusCode).toBe(400);
     expect(res.payload).toEqual({ error: 'provider_id not found' });
+    expect(update).not.toHaveBeenCalled();
   });
 
   test('POST /patients/:id/assign-provider updates provider', async () => {

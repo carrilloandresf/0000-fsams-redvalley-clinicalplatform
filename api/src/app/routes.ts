@@ -195,7 +195,7 @@ router.post('/patients/:id/assign-provider', async (req, res) => {
     }
 
     const provider = await ProviderModel.findByPk(providerIdRaw);
-    if (!provider) {
+    if (provider == null) {
       return res.status(400).json({ error: 'provider_id not found' });
     }
 
