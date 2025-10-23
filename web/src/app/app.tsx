@@ -1,50 +1,31 @@
-// Uncomment this line to use CSS modules
-// import styles from './app.module.css';
-import NxWelcome from './nx-welcome';
-
-import { Route, Routes, Link } from 'react-router-dom';
+import { Link, Route, Routes } from 'react-router-dom';
+import PatientsList from '../features/patients/patientsList';
+import NewPatientForm from '../features/patients/newPatientForm';
 
 export function App() {
   return (
-    <div>
-      <NxWelcome title="web" />
+    <div className="min-h-screen bg-slate-50">
+      <header className="bg-white border-b">
+        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+          <Link to="/" className="font-semibold">Clinical Platform</Link>
+          <nav className="text-sm">
+            <Link to="/" className="mr-4">Pacientes</Link>
+            <Link to="/new" className="px-3 py-1 rounded bg-slate-900 text-white">Nuevo</Link>
+          </nav>
+        </div>
+      </header>
 
-      {/* START: routes */}
-      {/* These routes and navigation have been generated for you */}
-      {/* Feel free to move and update them to fit your needs */}
-      <br />
-      <hr />
-      <br />
-      <div role="navigation">
-        <ul>
-          <li>
-            <Link to="/">Home</Link>
-          </li>
-          <li>
-            <Link to="/page-2">Page 2</Link>
-          </li>
-        </ul>
-      </div>
-      <Routes>
-        <Route
-          path="/"
-          element={
-            <div>
-              This is the generated root route.{' '}
-              <Link to="/page-2">Click here for page 2.</Link>
+      <main className="max-w-5xl mx-auto px-4 py-6">
+        <Routes>
+          <Route path="/" element={<PatientsList />} />
+          <Route path="/new" element={
+            <div className="max-w-md">
+              <h2 className="text-xl font-semibold mb-4">Crear paciente</h2>
+              <NewPatientForm />
             </div>
-          }
-        />
-        <Route
-          path="/page-2"
-          element={
-            <div>
-              <Link to="/">Click here to go back to root page.</Link>
-            </div>
-          }
-        />
-      </Routes>
-      {/* END: routes */}
+          } />
+        </Routes>
+      </main>
     </div>
   );
 }

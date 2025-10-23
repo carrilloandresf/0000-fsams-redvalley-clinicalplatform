@@ -1,6 +1,15 @@
 # 0000-fsams-redvalley-clinicalplatform
 Red Valley Test
 
+## Arquitectura:
+┌─────────────────┐    HTTP/REST     ┌─────────────────┐    SQL/Queries    ┌─────────────────┐
+│   FRONTEND      │ ───────────────► │   BACKEND API   │ ────────────────► │   BASE DE DATOS  │
+│   (React)       │                  │   (Express)     │                   │   (MySQL)        │
+│                 │ ◄─────────────── │                 │ ◄──────────────── │                 │
+│ • TanStack Query│                  │ • Endpoints     │                   │ • Tablas         │
+│ • Axios/fetch   │                  │ • Sequelize     │                   │ • Datos crudos   │
+└─────────────────┘                  └─────────────────┘                   └─────────────────┘
+
 ## Requisitos
 - Node 18+ (recomendado 20)
 - Docker Desktop (Compose v2)

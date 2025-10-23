@@ -48,6 +48,7 @@
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.2.0",
     "@vitest/ui": "^3.0.0",
+    "autoprefixer": "^10.4.21",
     "babel-jest": "^30.0.2",
     "eslint": "^9.8.0",
     "eslint-config-prettier": "^10.0.0",
@@ -62,8 +63,10 @@
     "jiti": "2.4.2",
     "jsdom": "~22.1.0",
     "nx": "22.0.0",
+    "postcss": "^8.5.6",
     "prettier": "^2.6.2",
     "react-refresh": "^0.10.0",
+    "tailwindcss": "^3.4.18",
     "ts-jest": "^29.4.0",
     "ts-node": "10.9.1",
     "tslib": "^2.3.0",
@@ -75,8 +78,13 @@
   },
   "nx": {},
   "dependencies": {
+    "@reduxjs/toolkit": "^2.9.2",
+    "@tanstack/react-query": "^5.90.5",
+    "@tanstack/react-query-devtools": "^5.90.2",
+    "axios": "^1.12.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-redux": "^9.2.0",
     "react-router-dom": "6.29.0"
   }
 }

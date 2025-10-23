@@ -18,7 +18,8 @@ async function bootstrap() {
 
   const app = express();
 
-  app.use(cors({ origin: 'http://localhost:5173' }));
+  // Habilitar CORS para 5173 y 4200
+  app.use(cors({ origin: ['http://localhost:5173', 'http://localhost:4200'] }));
 
   app.use(express.json());
   app.use(router);
