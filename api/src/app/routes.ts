@@ -212,12 +212,12 @@ router.post('/patients/:id/assign-provider', async (req, res) => {
 // Reglas mínimas: si existe status => OK. (Validación de jerarquía es opcional y la podemos añadir luego)
 router.post('/patients/:id/change-status', async (req, res) => {
   const transaction = await sequelize.transaction();
-  let finished = false;
 
-  const respondAndRollback = async (statusCode: number, payload: unknown) => {
-    if (!finished) {
+  const rollbackAndRespond = async (statusCode: number, payload: unknown) => {
+    try {
       await transaction.rollback();
-      finished = true;
+    } catch (rollbackError) {
+      console.error('POST /patients/:id/change-status rollback error:', rollbackError);
     }
     return res.status(statusCode).json(payload);
   };
@@ -227,17 +227,17 @@ router.post('/patients/:id/change-status', async (req, res) => {
     const statusIdRaw = typeof req.body?.status_id === 'string' ? req.body.status_id.trim() : '';
 
     if (!statusIdRaw) {
-      return respondAndRollback(400, { error: 'status_id is required' });
+      return rollbackAndRespond(400, { error: 'status_id is required' });
     }
 
     const patient = await PatientModel.findByPk(patientId, { transaction });
     if (!patient) {
-      return respondAndRollback(404, { error: 'patient not found' });
+      return rollbackAndRespond(404, { error: 'patient not found' });
     }
 
     const status = await StatusModel.findByPk(statusIdRaw, { transaction });
     if (!status) {
-      return respondAndRollback(400, { error: 'status_id not found' });
+      return rollbackAndRespond(400, { error: 'status_id not found' });
     }
 
     await patient.update({ status_id: statusIdRaw }, { transaction });
@@ -248,15 +248,12 @@ router.post('/patients/:id/change-status', async (req, res) => {
     );
 
     await transaction.commit();
-    finished = true;
     return res.json({ ok: true });
   } catch (err) {
-    if (!finished) {
-      try {
-        await transaction.rollback();
-      } catch (rollbackError) {
-        console.error('POST /patients/:id/change-status rollback error:', rollbackError);
-      }
+    try {
+      await transaction.rollback();
+    } catch (rollbackError) {
+      console.error('POST /patients/:id/change-status rollback error:', rollbackError);
     }
     console.error('POST /patients/:id/change-status error:', err);
     return res.status(500).json({ error: 'Failed to change status' });
