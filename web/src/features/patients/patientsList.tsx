@@ -59,7 +59,7 @@ function PatientRow({ patient }: PatientRowProps) {
   return (
     <tr className="border-t">
       <td className="p-3">
-        <Link className="underline" to={`/patient/${patient.id}`}>{patient.full_name}</Link>
+        <Link className="underline" to={`/patients/${patient.id}`}>{patient.full_name}</Link>
       </td>
       <td className="p-3">{patient.email}</td>
       <td className="p-3">{patient.phone}</td>
