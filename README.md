@@ -2,7 +2,7 @@
 Red Valley Test
 =================================
 
-## 🏗️ Arquitectura del Sistema
+🏗️ Arquitectura del Sistema
 -----------------
 ![Logo](./src/img/architectureDiagram.png)
 
