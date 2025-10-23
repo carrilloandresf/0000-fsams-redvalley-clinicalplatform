@@ -19,7 +19,12 @@
     "lint": "nx run-many --target=lint --all",
     "format": "nx format:write",
     "graph": "nx graph",
-    "test": "nx run-many --target=test --all -- --coverage"
+    "test": "nx run-many --target=test --all",
+    "test:coverage": "nx run-many --target=test --all -- --coverage",
+    "test:api": "nx test api",
+    "test:web": "nx test web",
+    "test:api:coverage": "nx test api -- --coverage",
+    "test:web:coverage": "nx test web -- --coverage"
   },
   "workspaces": [
     "api"

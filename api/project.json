@@ -30,8 +30,7 @@
       "options": {
         "jestConfig": "api/jest.config.ts",
         "runInBand": true,
-        "passWithNoTests": false,
-        "codeCoverage": true
+        "passWithNoTests": false
       }
     },
     "lint": {
