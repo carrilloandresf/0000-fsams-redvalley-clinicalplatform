@@ -185,25 +185,29 @@ router.post('/patients/:id/assign-provider', async (req, res) => {
   try {
     const patientId = req.params.id;
     const providerIdRaw = typeof req.body?.provider_id === 'string' ? req.body.provider_id.trim() : '';
+
     if (!providerIdRaw) {
-      return res.status(400).json({ error: 'provider_id is required' });
+      res.status(400).json({ error: 'provider_id is required' });
+      return;
     }
 
     const patient = await PatientModel.findByPk(patientId);
     if (!patient) {
-      return res.status(404).json({ error: 'patient not found' });
+      res.status(404).json({ error: 'patient not found' });
+      return;
     }
 
     const provider = await ProviderModel.findByPk(providerIdRaw);
     if (provider == null) {
-      return res.status(400).json({ error: 'provider_id not found' });
+      res.status(400).json({ error: 'provider_id not found' });
+      return;
     }
 
     await patient.update({ provider_id: providerIdRaw });
-    return res.json({ ok: true });
+    res.json({ ok: true });
   } catch (err) {
     console.error('POST /patients/:id/assign-provider error:', err);
-    return res.status(500).json({ error: 'Failed to assign provider' });
+    res.status(500).json({ error: 'Failed to assign provider' });
   }
 });
 
@@ -211,26 +215,35 @@ router.post('/patients/:id/assign-provider', async (req, res) => {
 // Reglas mínimas: si existe status => OK. (Validación de jerarquía es opcional y la podemos añadir luego)
 router.post('/patients/:id/change-status', async (req, res) => {
   const transaction = await sequelize.transaction();
+  let finished = false;
+
+  const respondAndRollback = async (statusCode: number, payload: unknown) => {
+    if (!finished) {
+      await transaction.rollback();
+      finished = true;
+    }
+    res.status(statusCode).json(payload);
+  };
 
   try {
     const patientId = req.params.id;
     const statusIdRaw = typeof req.body?.status_id === 'string' ? req.body.status_id.trim() : '';
 
     if (!statusIdRaw) {
-      await transaction.rollback();
-      return res.status(400).json({ error: 'status_id is required' });
+      await respondAndRollback(400, { error: 'status_id is required' });
+      return;
     }
 
     const patient = await PatientModel.findByPk(patientId, { transaction });
     if (!patient) {
-      await transaction.rollback();
-      return res.status(404).json({ error: 'patient not found' });
+      await respondAndRollback(404, { error: 'patient not found' });
+      return;
     }
 
     const status = await StatusModel.findByPk(statusIdRaw, { transaction });
     if (!status) {
-      await transaction.rollback();
-      return res.status(400).json({ error: 'status_id not found' });
+      await respondAndRollback(400, { error: 'status_id not found' });
+      return;
     }
 
     await patient.update({ status_id: statusIdRaw }, { transaction });
@@ -241,11 +254,18 @@ router.post('/patients/:id/change-status', async (req, res) => {
     );
 
     await transaction.commit();
-    return res.json({ ok: true });
+    finished = true;
+    res.json({ ok: true });
   } catch (err) {
-    await transaction.rollback();
+    if (!finished) {
+      try {
+        await transaction.rollback();
+      } catch (rollbackError) {
+        console.error('POST /patients/:id/change-status rollback error:', rollbackError);
+      }
+    }
     console.error('POST /patients/:id/change-status error:', err);
-    return res.status(500).json({ error: 'Failed to change status' });
+    res.status(500).json({ error: 'Failed to change status' });
   }
 });
 
