@@ -1,5 +1,6 @@
 import { Router } from 'express';
 
+import { randomUUID } from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 
 import { PatientModel } from '../infra/db/models/patientModel';
@@ -94,38 +95,50 @@ router.post('/providers', async (req, res) => {
 // POST /patients  -> crea paciente (sin provider/status por defecto)
 router.post('/patients', async (req, res) => {
   try {
-    const { full_name, email, phone, provider_id = null, status_id = null } = req.body ?? {};
+    const body = req.body ?? {};
+    const fullName = typeof body.full_name === 'string' ? body.full_name.trim() : '';
+    const emailRaw = typeof body.email === 'string' ? body.email.trim() : '';
+    const phoneRaw = typeof body.phone === 'string' ? body.phone.trim() : '';
+    const providerIdRaw = typeof body.provider_id === 'string' ? body.provider_id.trim() : '';
+    const statusIdRaw = typeof body.status_id === 'string' ? body.status_id.trim() : '';
+    const providerId = providerIdRaw.length > 0 ? providerIdRaw : null;
+    const statusId = statusIdRaw.length > 0 ? statusIdRaw : null;
 
-    // Reglas mínimas
-    if (!full_name || typeof full_name !== 'string' || full_name.trim().length < 2) {
+    if (!fullName || fullName.length < 2) {
       return res.status(400).json({ error: 'full_name is required (min 2 chars)' });
     }
-    if (!email || typeof email !== 'string' || !/^\S+@\S+\.\S+$/.test(email)) {
+
+    if (!emailRaw || !/^\S+@\S+\.\S+$/.test(emailRaw)) {
       return res.status(400).json({ error: 'email is invalid' });
     }
-    if (!phone || typeof phone !== 'string' || phone.trim().length < 5) {
+
+    if (!phoneRaw || phoneRaw.length < 5) {
       return res.status(400).json({ error: 'phone is required (min 5 chars)' });
     }
 
-    // Si envían provider/status, verifica existencia
-    if (provider_id) {
-      const provider = await ProviderModel.findByPk(provider_id);
-      if (!provider) return res.status(400).json({ error: 'provider_id not found' });
-    }
-    if (status_id) {
-      const status = await StatusModel.findByPk(status_id);
-      if (!status) return res.status(400).json({ error: 'status_id not found' });
+    if (providerId) {
+      const provider = await ProviderModel.findByPk(providerId);
+      if (!provider) {
+        return res.status(400).json({ error: 'provider_id not found' });
+      }
     }
 
-    const id = require('crypto').randomUUID();
+    if (statusId) {
+      const status = await StatusModel.findByPk(statusId);
+      if (!status) {
+        return res.status(400).json({ error: 'status_id not found' });
+      }
+    }
+
     const patient = await PatientModel.create({
-      id,
-      full_name: full_name.trim(),
-      email: email.trim().toLowerCase(),
-      phone: phone.trim(),
-      provider_id,
-      status_id,
+      id: randomUUID(),
+      full_name: fullName,
+      email: emailRaw.toLowerCase(),
+      phone: phoneRaw,
+      provider_id: providerId,
+      status_id: statusId,
     });
+
     return res.status(201).json(patient);
   } catch (err) {
     console.error('POST /patients error:', err);
@@ -171,17 +184,22 @@ router.get('/patients/:id', async (req, res) => {
 router.post('/patients/:id/assign-provider', async (req, res) => {
   try {
     const patientId = req.params.id;
-    const { provider_id } = req.body ?? {};
-    if (!provider_id) return res.status(400).json({ error: 'provider_id is required' });
+    const providerIdRaw = typeof req.body?.provider_id === 'string' ? req.body.provider_id.trim() : '';
+    if (!providerIdRaw) {
+      return res.status(400).json({ error: 'provider_id is required' });
+    }
 
-    const [patient, provider] = await Promise.all([
-      PatientModel.findByPk(patientId),
-      ProviderModel.findByPk(provider_id),
-    ]);
-    if (!patient) return res.status(404).json({ error: 'patient not found' });
-    if (!provider) return res.status(400).json({ error: 'provider_id not found' });
+    const patient = await PatientModel.findByPk(patientId);
+    if (!patient) {
+      return res.status(404).json({ error: 'patient not found' });
+    }
 
-    await patient.update({ provider_id });
+    const provider = await ProviderModel.findByPk(providerIdRaw);
+    if (!provider) {
+      return res.status(400).json({ error: 'provider_id not found' });
+    }
+
+    await patient.update({ provider_id: providerIdRaw });
     return res.json({ ok: true });
   } catch (err) {
     console.error('POST /patients/:id/assign-provider error:', err);
@@ -192,42 +210,40 @@ router.post('/patients/:id/assign-provider', async (req, res) => {
 // POST /patients/:id/change-status -> { status_id }
 // Reglas mínimas: si existe status => OK. (Validación de jerarquía es opcional y la podemos añadir luego)
 router.post('/patients/:id/change-status', async (req, res) => {
-  const t = await sequelize.transaction();
+  const transaction = await sequelize.transaction();
+
   try {
     const patientId = req.params.id;
-    const { status_id } = req.body ?? {};
-    if (!status_id) {
-      await t.rollback();
+    const statusIdRaw = typeof req.body?.status_id === 'string' ? req.body.status_id.trim() : '';
+
+    if (!statusIdRaw) {
+      await transaction.rollback();
       return res.status(400).json({ error: 'status_id is required' });
     }
 
-    const [patient, status] = await Promise.all([
-      PatientModel.findByPk(patientId, { transaction: t }),
-      StatusModel.findByPk(status_id, { transaction: t }),
-    ]);
-
+    const patient = await PatientModel.findByPk(patientId, { transaction });
     if (!patient) {
-      await t.rollback();
+      await transaction.rollback();
       return res.status(404).json({ error: 'patient not found' });
     }
+
+    const status = await StatusModel.findByPk(statusIdRaw, { transaction });
     if (!status) {
-      await t.rollback();
+      await transaction.rollback();
       return res.status(400).json({ error: 'status_id not found' });
     }
 
-    // 1) Actualiza estado actual del paciente
-    await patient.update({ status_id }, { transaction: t });
+    await patient.update({ status_id: statusIdRaw }, { transaction });
 
-    // 2) Inserta en historial
     await StatusHistoryModel.create(
-      { id: require('crypto').randomUUID(), patient_id: patient.id, status_id },
-      { transaction: t }
+      { id: randomUUID(), patient_id: patient.id, status_id: statusIdRaw },
+      { transaction }
     );
 
-    await t.commit();
+    await transaction.commit();
     return res.json({ ok: true });
   } catch (err) {
-    await t.rollback();
+    await transaction.rollback();
     console.error('POST /patients/:id/change-status error:', err);
     return res.status(500).json({ error: 'Failed to change status' });
   }
