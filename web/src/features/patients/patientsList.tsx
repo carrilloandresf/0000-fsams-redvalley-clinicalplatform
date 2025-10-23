@@ -2,6 +2,7 @@ import { usePatientsQuery, useAssignProviderMutation, useChangeStatusMutation } 
 import ProviderSelect from '../../components/providerSelect';
 import StatusSelect from '../../components/statusSelect';
 import type { Patient } from '../../types';
+import { Link } from 'react-router-dom';
 
 export default function PatientsList() {
   const { data, isLoading, isError, error } = usePatientsQuery();
@@ -57,7 +58,9 @@ function PatientRow({ patient }: PatientRowProps) {
 
   return (
     <tr className="border-t">
-      <td className="p-3">{patient.full_name}</td>
+      <td className="p-3">
+        <Link className="underline" to={`/patient/${patient.id}`}>{patient.full_name}</Link>
+      </td>
       <td className="p-3">{patient.email}</td>
       <td className="p-3">{patient.phone}</td>
       <td className="p-3">
@@ -73,7 +76,7 @@ function PatientRow({ patient }: PatientRowProps) {
           disabled={changeStatus.isPending}
           onChange={handleStatusChange}
         />
-      </td>
+      </td> 
     </tr>
   );
 }

@@ -1,6 +1,7 @@
 import { Link, Route, Routes } from 'react-router-dom';
 import PatientsList from '../features/patients/patientsList';
 import NewPatientForm from '../features/patients/newPatientForm';
+import PatientDetail from '../features/patients/patientDetail';
 
 export function App() {
   return (
@@ -24,6 +25,7 @@ export function App() {
               <NewPatientForm />
             </div>
           } />
+          <Route path="/patients/:id" element={<PatientDetail />} />
         </Routes>
       </main>
     </div>
