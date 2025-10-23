@@ -3,13 +3,20 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { nxViteTsPaths } from '@nx/vite/plugins/nx-tsconfig-paths.plugin';
 import { nxCopyAssetsPlugin } from '@nx/vite/plugins/nx-copy-assets.plugin';
+import { resolve } from 'node:path';
+
+const projectRoot = __dirname;
+const workspaceRoot = resolve(projectRoot, '..');
 
 export default defineConfig(() => ({
-  root: __dirname,
+  root: projectRoot,
   cacheDir: '../node_modules/.vite/web',
   server: {
     port: 4200,
     host: 'localhost',
+    fs: {
+      allow: [projectRoot, workspaceRoot],
+    },
   },
   preview: {
     port: 4200,
