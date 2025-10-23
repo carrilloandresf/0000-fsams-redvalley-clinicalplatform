@@ -1,7 +1,9 @@
-import { combineReducers, configureStore } from '@reduxjs/toolkit';
+import { configureStore } from '@reduxjs/toolkit';
 
-// Root reducer placeholder – add slices here as they are implemented.
-const rootReducer = combineReducers({});
+// Root reducer placeholder – replace with actual slices as they are implemented.
+type EmptyState = Record<string, never>;
+
+const rootReducer = (state: EmptyState = {}): EmptyState => state;
 
 export const store = configureStore({
   reducer: rootReducer,
