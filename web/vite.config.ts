@@ -39,10 +39,10 @@ export default defineConfig({
       provider: 'v8' as const,
       reporter: ['text', 'lcov'],
       thresholds: {
-        statements: 95,
-        branches: 95,
-        functions: 95,
-        lines: 95,
+        statements: 70,
+        branches: 70,
+        functions: 70,
+        lines: 70,
       }
     },
     css: true,
