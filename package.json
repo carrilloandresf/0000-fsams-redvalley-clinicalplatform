@@ -8,8 +8,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "workspaces": [
-    "api/*",
-    "web/*"
+    "api"
   ],
   "repository": {
     "type": "git",
