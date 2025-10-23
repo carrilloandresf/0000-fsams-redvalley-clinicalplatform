@@ -84,14 +84,14 @@ function createRes() {
   return res as unknown as Response & { statusCode: number; payload: any };
 }
 
-const noopNext = jest.fn<ReturnType<NextFunction>, Parameters<NextFunction>>();
+const noopNext = jest.fn();
 
 async function invokeHandler(
   handler: RequestHandler,
   req: Partial<Request> | undefined,
   res: Response & { statusCode: number; payload: any }
 ) {
-  await handler((req ?? {}) as Request, res, noopNext);
+  await handler((req ?? {}) as Request, res, noopNext as unknown as NextFunction);
 }
 
 describe('app routes', () => {
