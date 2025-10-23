@@ -440,7 +440,12 @@ describe('app routes', () => {
     const transaction = { commit: jest.fn(), rollback: jest.fn() };
     sequelizeMock.transaction.mockResolvedValueOnce(transaction);
     await invokeHandler(handler, { params: { id: 'p1' }, body: {} } as unknown as Request, res);
+    expect(sequelizeMock.transaction).toHaveBeenCalledTimes(1);
     expect(transaction.rollback).toHaveBeenCalledTimes(1);
+    expect(transaction.commit).not.toHaveBeenCalled();
+    expect(patientModelMock.findByPk).not.toHaveBeenCalled();
+    expect(statusModelMock.findByPk).not.toHaveBeenCalled();
+    expect(statusHistoryModelMock.create).not.toHaveBeenCalled();
     expect(res.statusCode).toBe(400);
     expect(res.payload).toEqual({ error: 'status_id is required' });
   });
@@ -453,7 +458,12 @@ describe('app routes', () => {
     patientModelMock.findByPk.mockResolvedValueOnce(null);
     statusModelMock.findByPk.mockResolvedValueOnce({ id: 's' });
     await invokeHandler(handler, { params: { id: 'p1' }, body: { status_id: 's' } } as unknown as Request, res);
+    expect(sequelizeMock.transaction).toHaveBeenCalledTimes(1);
+    expect(patientModelMock.findByPk).toHaveBeenCalledWith('p1', { transaction });
+    expect(statusModelMock.findByPk).not.toHaveBeenCalled();
     expect(transaction.rollback).toHaveBeenCalledTimes(1);
+    expect(transaction.commit).not.toHaveBeenCalled();
+    expect(statusHistoryModelMock.create).not.toHaveBeenCalled();
     expect(res.statusCode).toBe(404);
     expect(res.payload).toEqual({ error: 'patient not found' });
   });
@@ -463,10 +473,17 @@ describe('app routes', () => {
     const res = createRes();
     const transaction = { commit: jest.fn(), rollback: jest.fn() };
     sequelizeMock.transaction.mockResolvedValueOnce(transaction);
-    patientModelMock.findByPk.mockResolvedValueOnce({ id: 'p1', update: jest.fn() });
+    const update = jest.fn();
+    patientModelMock.findByPk.mockResolvedValueOnce({ id: 'p1', update });
     statusModelMock.findByPk.mockResolvedValueOnce(null);
     await invokeHandler(handler, { params: { id: 'p1' }, body: { status_id: 's' } } as unknown as Request, res);
+    expect(sequelizeMock.transaction).toHaveBeenCalledTimes(1);
+    expect(patientModelMock.findByPk).toHaveBeenCalledWith('p1', { transaction });
+    expect(statusModelMock.findByPk).toHaveBeenCalledWith('s', { transaction });
     expect(transaction.rollback).toHaveBeenCalledTimes(1);
+    expect(transaction.commit).not.toHaveBeenCalled();
+    expect(statusHistoryModelMock.create).not.toHaveBeenCalled();
+    expect(update).not.toHaveBeenCalled();
     expect(res.statusCode).toBe(400);
     expect(res.payload).toEqual({ error: 'status_id not found' });
   });
@@ -481,13 +498,18 @@ describe('app routes', () => {
     const handler = getHandler('post', '/patients/:id/change-status');
     const res = createRes();
     await invokeHandler(handler, { params: { id: 'p1' }, body: { status_id: 's1' } } as unknown as Request, res);
+    expect(sequelizeMock.transaction).toHaveBeenCalledTimes(1);
+    expect(patientModelMock.findByPk).toHaveBeenCalledWith('p1', { transaction });
+    expect(statusModelMock.findByPk).toHaveBeenCalledWith('s1', { transaction });
     expect(update).toHaveBeenCalledWith({ status_id: 's1' }, { transaction });
     expect(statusHistoryModelMock.create).toHaveBeenCalledWith(
       { id: 'crypto-mock', patient_id: 'p1', status_id: 's1' },
       { transaction }
     );
+    expect(transaction.rollback).not.toHaveBeenCalled();
     expect(transaction.commit).toHaveBeenCalledTimes(1);
     expect(res.payload).toEqual({ ok: true });
+    expect(res.statusCode).toBe(200);
   });
 
   test('POST /patients/:id/change-status handles errors', async () => {
@@ -499,7 +521,12 @@ describe('app routes', () => {
     statusModelMock.findByPk.mockResolvedValueOnce({ id: 's1' });
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
     await invokeHandler(handler, { params: { id: 'p1' }, body: { status_id: 's1' } } as unknown as Request, res);
+    expect(sequelizeMock.transaction).toHaveBeenCalledTimes(1);
+    expect(patientModelMock.findByPk).toHaveBeenCalledWith('p1', { transaction });
+    expect(statusModelMock.findByPk).not.toHaveBeenCalled();
+    expect(statusHistoryModelMock.create).not.toHaveBeenCalled();
     expect(transaction.rollback).toHaveBeenCalledTimes(1);
+    expect(transaction.commit).not.toHaveBeenCalled();
     expect(res.statusCode).toBe(500);
     expect(res.payload).toEqual({ error: 'Failed to change status' });
     consoleSpy.mockRestore();
