@@ -1,8 +1,17 @@
 import { useState } from 'react';
+import type { FormEvent } from 'react';
 import { useCreatePatientMutation } from './api';
 import type { NewPatientInput } from '../../types';
 import { useProvidersQuery } from '../providers/api';
 import { useStatusesQuery } from '../statuses/api';
+
+const FIELD_IDS = {
+  fullName: 'new-patient-full-name',
+  email: 'new-patient-email',
+  phone: 'new-patient-phone',
+  provider: 'new-patient-provider',
+  status: 'new-patient-status',
+} as const;
 
 export default function NewPatientForm() {
   const [form, setForm] = useState<NewPatientInput>({
@@ -14,13 +23,13 @@ export default function NewPatientForm() {
   });
 
   const { data: providers, isLoading: loadingProviders } = useProvidersQuery();
-  const { data: statuses,  isLoading: loadingStatuses  } = useStatusesQuery();
+  const { data: statuses, isLoading: loadingStatuses } = useStatusesQuery();
 
   const { mutateAsync, isPending } = useCreatePatientMutation();
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
-  const onSubmit = async (e: React.FormEvent) => {
+  const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setMsg(null); setErr(null);
 
@@ -45,9 +54,12 @@ export default function NewPatientForm() {
   return (
     <form onSubmit={onSubmit} className="space-y-3">
       <div>
-        <label className="block text-sm mb-1">Nombre completo</label>
+        <label className="block text-sm mb-1" htmlFor={FIELD_IDS.fullName}>
+          Nombre completo
+        </label>
         <input
           className="w-full border rounded-lg px-3 py-2"
+          id={FIELD_IDS.fullName}
           value={form.full_name}
           onChange={(e) => setForm({ ...form, full_name: e.target.value })}
           required
@@ -56,10 +68,13 @@ export default function NewPatientForm() {
       </div>
 
       <div>
-        <label className="block text-sm mb-1">Email</label>
+        <label className="block text-sm mb-1" htmlFor={FIELD_IDS.email}>
+          Email
+        </label>
         <input
           type="email"
           className="w-full border rounded-lg px-3 py-2"
+          id={FIELD_IDS.email}
           value={form.email}
           onChange={(e) => setForm({ ...form, email: e.target.value })}
           required
@@ -67,9 +82,12 @@ export default function NewPatientForm() {
       </div>
 
       <div>
-        <label className="block text-sm mb-1">Teléfono</label>
+        <label className="block text-sm mb-1" htmlFor={FIELD_IDS.phone}>
+          Teléfono
+        </label>
         <input
           className="w-full border rounded-lg px-3 py-2"
+          id={FIELD_IDS.phone}
           value={form.phone}
           onChange={(e) => setForm({ ...form, phone: e.target.value })}
           required
@@ -78,9 +96,12 @@ export default function NewPatientForm() {
       </div>
 
       <div>
-        <label className="block text-sm mb-1">Proveedor (opcional)</label>
+        <label className="block text-sm mb-1" htmlFor={FIELD_IDS.provider}>
+          Proveedor (opcional)
+        </label>
         <select
           className="w-full border rounded-lg px-3 py-2"
+          id={FIELD_IDS.provider}
           value={form.provider_id ?? ''}
           onChange={(e) => setForm({ ...form, provider_id: e.target.value || null })}
           disabled={loadingProviders || isPending}
@@ -93,9 +114,12 @@ export default function NewPatientForm() {
       </div>
 
       <div>
-        <label className="block text-sm mb-1">Estado (opcional)</label>
+        <label className="block text-sm mb-1" htmlFor={FIELD_IDS.status}>
+          Estado (opcional)
+        </label>
         <select
           className="w-full border rounded-lg px-3 py-2"
+          id={FIELD_IDS.status}
           value={form.status_id ?? ''}
           onChange={(e) => setForm({ ...form, status_id: e.target.value || null })}
           disabled={loadingStatuses || isPending}
