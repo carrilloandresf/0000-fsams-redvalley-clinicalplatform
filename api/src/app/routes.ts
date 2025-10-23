@@ -187,27 +187,24 @@ router.post('/patients/:id/assign-provider', async (req, res) => {
     const providerIdRaw = typeof req.body?.provider_id === 'string' ? req.body.provider_id.trim() : '';
 
     if (!providerIdRaw) {
-      res.status(400).json({ error: 'provider_id is required' });
-      return;
+      return res.status(400).json({ error: 'provider_id is required' });
     }
 
     const patient = await PatientModel.findByPk(patientId);
     if (!patient) {
-      res.status(404).json({ error: 'patient not found' });
-      return;
+      return res.status(404).json({ error: 'patient not found' });
     }
 
     const provider = await ProviderModel.findByPk(providerIdRaw);
     if (provider == null) {
-      res.status(400).json({ error: 'provider_id not found' });
-      return;
+      return res.status(400).json({ error: 'provider_id not found' });
     }
 
     await patient.update({ provider_id: providerIdRaw });
-    res.json({ ok: true });
+    return res.json({ ok: true });
   } catch (err) {
     console.error('POST /patients/:id/assign-provider error:', err);
-    res.status(500).json({ error: 'Failed to assign provider' });
+    return res.status(500).json({ error: 'Failed to assign provider' });
   }
 });
 
@@ -222,7 +219,7 @@ router.post('/patients/:id/change-status', async (req, res) => {
       await transaction.rollback();
       finished = true;
     }
-    res.status(statusCode).json(payload);
+    return res.status(statusCode).json(payload);
   };
 
   try {
@@ -230,20 +227,17 @@ router.post('/patients/:id/change-status', async (req, res) => {
     const statusIdRaw = typeof req.body?.status_id === 'string' ? req.body.status_id.trim() : '';
 
     if (!statusIdRaw) {
-      await respondAndRollback(400, { error: 'status_id is required' });
-      return;
+      return respondAndRollback(400, { error: 'status_id is required' });
     }
 
     const patient = await PatientModel.findByPk(patientId, { transaction });
     if (!patient) {
-      await respondAndRollback(404, { error: 'patient not found' });
-      return;
+      return respondAndRollback(404, { error: 'patient not found' });
     }
 
     const status = await StatusModel.findByPk(statusIdRaw, { transaction });
     if (!status) {
-      await respondAndRollback(400, { error: 'status_id not found' });
-      return;
+      return respondAndRollback(400, { error: 'status_id not found' });
     }
 
     await patient.update({ status_id: statusIdRaw }, { transaction });
@@ -255,7 +249,7 @@ router.post('/patients/:id/change-status', async (req, res) => {
 
     await transaction.commit();
     finished = true;
-    res.json({ ok: true });
+    return res.json({ ok: true });
   } catch (err) {
     if (!finished) {
       try {
@@ -265,7 +259,7 @@ router.post('/patients/:id/change-status', async (req, res) => {
       }
     }
     console.error('POST /patients/:id/change-status error:', err);
-    res.status(500).json({ error: 'Failed to change status' });
+    return res.status(500).json({ error: 'Failed to change status' });
   }
 });
 
