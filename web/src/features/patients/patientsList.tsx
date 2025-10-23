@@ -1,6 +1,7 @@
 import { usePatientsQuery, useAssignProviderMutation, useChangeStatusMutation } from './api';
 import ProviderSelect from '../../components/providerSelect';
 import StatusSelect from '../../components/statusSelect';
+import type { Patient } from '../../types';
 
 export default function PatientsList() {
   const { data, isLoading, isError, error } = usePatientsQuery();
@@ -23,32 +24,9 @@ export default function PatientsList() {
             </tr>
           </thead>
           <tbody>
-            {data?.map((p) => {
-              const assignProvider = useAssignProviderMutation(p.id);
-              const changeStatus = useChangeStatusMutation(p.id);
-
-              return (
-                <tr key={p.id} className="border-t">
-                  <td className="p-3">{p.full_name}</td>
-                  <td className="p-3">{p.email}</td>
-                  <td className="p-3">{p.phone}</td>
-                  <td className="p-3">
-                    <ProviderSelect
-                      value={p.provider?.id ?? null}
-                      disabled={assignProvider.isPending}
-                      onChange={(id) => id ? assignProvider.mutate(id) : assignProvider.mutateAsync('')}
-                    />
-                  </td>
-                  <td className="p-3">
-                    <StatusSelect
-                      value={p.status?.id ?? null}
-                      disabled={changeStatus.isPending}
-                      onChange={(id) => id ? changeStatus.mutate(id) : changeStatus.mutateAsync('')}
-                    />
-                  </td>
-                </tr>
-              );
-            })}
+            {data?.map((patient) => (
+              <PatientRow key={patient.id} patient={patient} />
+            ))}
             {data?.length === 0 && (
               <tr><td className="p-3 text-slate-500" colSpan={5}>No hay pacientes aún</td></tr>
             )}
@@ -56,5 +34,46 @@ export default function PatientsList() {
         </table>
       </div>
     </div>
+  );
+}
+
+type PatientRowProps = {
+  patient: Patient;
+};
+
+function PatientRow({ patient }: PatientRowProps) {
+  const assignProvider = useAssignProviderMutation(patient.id);
+  const changeStatus = useChangeStatusMutation(patient.id);
+
+  const handleProviderChange = (id: string | null) => {
+    if (!id) return;
+    assignProvider.mutate(id);
+  };
+
+  const handleStatusChange = (id: string | null) => {
+    if (!id) return;
+    changeStatus.mutate(id);
+  };
+
+  return (
+    <tr className="border-t">
+      <td className="p-3">{patient.full_name}</td>
+      <td className="p-3">{patient.email}</td>
+      <td className="p-3">{patient.phone}</td>
+      <td className="p-3">
+        <ProviderSelect
+          value={patient.provider?.id ?? null}
+          disabled={assignProvider.isPending}
+          onChange={handleProviderChange}
+        />
+      </td>
+      <td className="p-3">
+        <StatusSelect
+          value={patient.status?.id ?? null}
+          disabled={changeStatus.isPending}
+          onChange={handleStatusChange}
+        />
+      </td>
+    </tr>
   );
 }
