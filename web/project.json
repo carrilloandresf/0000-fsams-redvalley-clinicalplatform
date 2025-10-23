@@ -6,21 +6,21 @@
   "tags": [],
   "targets": {
     "dev": {
-      "executor": "nxVite.devServer",
+      "executor": "@nx/vite:dev-server",
       "options": {
         "buildTarget": "web:build",
         "port": 5173
       }
     },
     "serve": {
-      "executor": "nxVite.devServer",
+      "executor": "@nx/vite:dev-server",
       "options": {
         "buildTarget": "web:build",
         "port": 5173
       }
     },
     "build": {
-      "executor": "nxVite.build",
+      "executor": "@nx/vite:build",
       "outputs": ["{options.outputPath}"],
       "defaultConfiguration": "production",
       "options": {
@@ -37,14 +37,14 @@
       }
     },
     "preview": {
-      "executor": "nxVite.preview",
+      "executor": "@nx/vite:preview-server",
       "options": {
         "buildTarget": "web:build",
         "port": 4173
       }
     },
     "test": {
-      "executor": "nxVite.test",
+      "executor": "@nx/vite:test",
       "outputs": ["{workspaceRoot}/coverage/web"],
       "options": {
         "passWithNoTests": false,
