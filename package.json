@@ -5,7 +5,21 @@
   "description": "Red Valley Technical Test",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev:api": "nx serve api",
+    "dev:web": "nx run web:dev",
+    "dev:all": "nx run-many --target=serve --projects=api,web --parallel",
+    "compose:up": "docker compose up -d",
+    "compose:down": "docker compose down",
+    "db:migrate": "npm exec --workspace api sequelize-cli db:migrate",
+    "db:seed": "npm exec --workspace api sequelize-cli db:seed:all",
+    "db:reset": "npm run compose:down && npm run compose:up && npm run db:migrate && npm run db:seed",
+    "build:api": "nx build api",
+    "build:web": "nx build web",
+    "build:all": "nx run-many --target=build --all",
+    "lint": "nx run-many --target=lint --all",
+    "format": "nx format:write",
+    "graph": "nx graph",
+    "test": "echo \"No tests configured\""
   },
   "workspaces": [
     "api"

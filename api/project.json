@@ -9,6 +9,11 @@
       "executor": "@nx/js:node",
       "options": {
         "buildTarget": "api:build"
+      },
+      "configurations": {
+        "development": {
+          "watch": true
+        }
       }
     },
     "build": {
@@ -17,6 +22,12 @@
         "outputPath": "dist/apps/api",
         "main": "api/src/main.ts",
         "tsConfig": "api/tsconfig.app.json"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "options": {
+        "lintFilePatterns": ["api/**/*.ts"]
       }
     }
   }

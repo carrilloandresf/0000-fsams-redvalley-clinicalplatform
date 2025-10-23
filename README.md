@@ -77,7 +77,7 @@ npm run dev:web
 
 **Opción 2: Ambos servicios**
 ```bash
-# Levanta backend y frontend simultáneamente (requiere 'concurrently')
+# Levanta backend y frontend simultáneamente (usa Nx run-many en paralelo)
 npm run dev:all
 ```
 
@@ -92,7 +92,7 @@ npm run dev:all
 ```bash
 npm run dev:api          # Servidor API (Nx serve)
 npm run dev:web          # Servidor frontend (Vite)
-npm run dev:all          # Ambos servidores simultáneamente
+npm run dev:all          # Ambos servidores simultáneamente (Nx run-many)
 ```
 
 **Base de Datos**
@@ -108,6 +108,7 @@ npm run db:reset         # Reset completo (down all -> migrate -> seed)
 ```bash
 npm run build:api        # Build del backend
 npm run build:web        # Build del frontend
+npm run build:all        # Build de todos los proyectos Nx
 npm run lint             # Análisis ESLint
 npm run format           # Formateo con Prettier
 npm run graph            # Visualizador de dependencias Nx
