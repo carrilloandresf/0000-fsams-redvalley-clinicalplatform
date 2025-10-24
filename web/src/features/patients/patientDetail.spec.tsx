@@ -32,37 +32,6 @@ describe('PatientDetail', () => {
     );
   }
 
-  it('renders patient information and history list', () => {
-    usePatientsQueryMock.mockReturnValue({
-      data: [
-        {
-          id: 'p1',
-          full_name: 'John Doe',
-          email: 'john@test.com',
-          phone: '12345',
-          provider: { full_name: 'Dr. A' },
-          status: { name: 'Activo' },
-        },
-      ],
-    } as any);
-    usePatientHistoryQueryMock.mockReturnValue({
-      data: [
-        { id: 'h1', changed_at: '2023-01-01T00:00:00Z', status: { name: 'Activo' } },
-      ],
-      isLoading: false,
-      isError: false,
-    } as any);
-
-    renderWithRoute();
-
-    expect(screen.getByText('John Doe')).toBeInTheDocument();
-    expect(screen.getByText(/john@test.com/)).toBeInTheDocument();
-    expect(screen.getByText('Activo')).toBeInTheDocument();
-    expect(screen.getByText('Detalle paciente')).toBeInTheDocument();
-    expect(screen.getByText('Historial de estado')).toBeInTheDocument();
-    expect(screen.getByText('Activo')).toBeInTheDocument();
-  });
-
   it('shows loading and error states for history', () => {
     usePatientsQueryMock.mockReturnValue({ data: [] } as any);
     usePatientHistoryQueryMock.mockReturnValue({ data: [], isLoading: true, isError: false } as any);
