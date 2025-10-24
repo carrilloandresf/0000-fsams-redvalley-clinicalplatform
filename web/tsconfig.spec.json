@@ -2,14 +2,15 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "../dist/out-tsc",
-    "module": "commonjs",
-    "moduleResolution": "node10",
+    "module": "esnext",
+    "moduleResolution": "node",
     "jsx": "react-jsx",
     "types": [
       "vitest",
       "vitest/globals",
       "@testing-library/jest-dom",
       "node",
+      "vite/client",
       "@nx/react/typings/cssmodule.d.ts",
       "@nx/react/typings/image.d.ts"
     ]
